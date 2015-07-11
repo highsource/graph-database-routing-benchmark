@@ -3,6 +3,8 @@ package org.hisrc.gtfs.graph.builder.jgrapht;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.hisrc.gtfs.graph.model.TemporalStopArrivalNode;
+import org.hisrc.gtfs.graph.model.TemporalStopDepartureNode;
 import org.hisrc.gtfs.graph.model.TemporalStopNode;
 import org.hisrc.gtfs.graph.model.TransitionEdge;
 import org.hisrc.gtfs.graph.model.TransitionType;
@@ -100,10 +102,10 @@ public class GtfsDirectedGraphBuilder {
 		final int arrivalTime = stopTime.getArrivalTime();
 		final int departureTime = stopTime.getDepartureTime();
 
-		final TemporalStopNode arrivalNode = new TemporalStopNode(stop,
-				arrivalTime, false);
-		final TemporalStopNode departureNode = new TemporalStopNode(stop,
-				departureTime, true);
+		final TemporalStopNode arrivalNode = new TemporalStopArrivalNode(stop,
+				arrivalTime);
+		final TemporalStopNode departureNode = new TemporalStopDepartureNode(
+				stop, departureTime);
 		graph.addVertex(arrivalNode);
 		graph.addVertex(departureNode);
 
