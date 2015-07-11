@@ -1,15 +1,15 @@
-package org.hisrc.gtfs.graph.model;
+package org.hisrc.gtfs.graph.model.vertex;
 
 import org.onebusaway.gtfs.model.Stop;
 
-public abstract class TemporalStopNode {
+public abstract class TemporalVertex {
 
 	// Reference to the stop
 	private final Stop stop;
 	// Time point
 	private final int time;
 
-	public TemporalStopNode(Stop stop, int time) {
+	public TemporalVertex(Stop stop, int time) {
 		super();
 		this.stop = stop;
 		this.time = time;

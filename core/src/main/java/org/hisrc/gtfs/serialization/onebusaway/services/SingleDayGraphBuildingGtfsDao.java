@@ -1,16 +1,14 @@
-package org.hisrc.gtfs.graph.builder.jgrapht;
+package org.hisrc.gtfs.serialization.onebusaway.services;
 
+import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
-import org.hisrc.gtfs.graph.model.TemporalStopArrivalNode;
-import org.hisrc.gtfs.graph.model.TemporalStopDepartureNode;
-import org.hisrc.gtfs.graph.model.TemporalStopNode;
-import org.hisrc.gtfs.graph.model.TransitionEdge;
-import org.hisrc.gtfs.graph.model.TransitionType;
-import org.jgrapht.DirectedGraph;
-import org.jgrapht.EdgeFactory;
-import org.jgrapht.graph.DirectedMultigraph;
+import org.apache.commons.lang3.Validate;
+import org.hisrc.gtfs.graph.builder.GraphBuilder;
+import org.hisrc.gtfs.graph.model.vertex.TemporalVertex;
 import org.joda.time.LocalDate;
 import org.onebusaway.gtfs.impl.GtfsDaoImpl;
 import org.onebusaway.gtfs.model.AgencyAndId;
@@ -20,56 +18,76 @@ import org.onebusaway.gtfs.model.Stop;
 import org.onebusaway.gtfs.model.StopTime;
 import org.onebusaway.gtfs.model.Trip;
 import org.onebusaway.gtfs.model.calendar.ServiceDate;
-import org.onebusaway.gtfs.services.GtfsMutableDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GtfsDirectedGraphBuilder {
+public class SingleDayGraphBuildingGtfsDao extends GtfsDaoImpl {
 
+	private Logger logger = LoggerFactory
+			.getLogger(SingleDayGraphBuildingGtfsDao.class);
+
+	private final GraphBuilder graphBuilder;
 	private final ServiceDate serviceDate;
 	private final int dayOfWeek;
 	private final Set<AgencyAndId> availableServiceIds = new HashSet<AgencyAndId>();
 
-	public GtfsDirectedGraphBuilder(int year, int month, int day) {
+	public SingleDayGraphBuildingGtfsDao(GraphBuilder graphBuilder, int year,
+			int month, int day) {
+		super();
+		this.graphBuilder = Validate.notNull(graphBuilder);
 		this.serviceDate = new ServiceDate(year, month, day);
 		final LocalDate localDate = new LocalDate(year, month, day);
 		this.dayOfWeek = localDate.getDayOfWeek();
 	}
 
-	private DirectedGraph<TemporalStopNode, TransitionEdge> graph = new DirectedMultigraph<TemporalStopNode, TransitionEdge>(
-			new EdgeFactory<TemporalStopNode, TransitionEdge>() {
-				@Override
-				public TransitionEdge createEdge(TemporalStopNode start,
-						TemporalStopNode stop) {
-					throw new UnsupportedOperationException();
-				}
-			});
-
-	private Logger logger = LoggerFactory
-			.getLogger(GtfsDirectedGraphBuilder.class);
-
-	private final GtfsMutableDao gtfsDao = new GtfsDaoImpl() {
-		public void saveEntity(Object entity) {
-			super.saveEntity(entity);
-			if (entity instanceof ServiceCalendarDate) {
-				addServiceCalendarDate((ServiceCalendarDate) entity);
-			}
-			if (entity instanceof ServiceCalendar) {
-				addServiceCalendar((ServiceCalendar) entity);
-			}
-			if (entity instanceof StopTime) {
-				addStopTime((StopTime) entity);
-			}
+	public void saveEntity(Object entity) {
+		super.saveEntity(entity);
+		if (entity instanceof Stop) {
+			addStop((Stop) entity);
 		}
-
-	};
+		if (entity instanceof ServiceCalendarDate) {
+			addServiceCalendarDate((ServiceCalendarDate) entity);
+		}
+		if (entity instanceof ServiceCalendar) {
+			addServiceCalendar((ServiceCalendar) entity);
+		}
+		if (entity instanceof StopTime) {
+			addStopTime((StopTime) entity);
+		}
+	}
 
 	private Set<Trip> processedTrips = new HashSet<Trip>();
 	private Trip lastTrip = null;
-	private TemporalStopNode lastNode = null;
+	private TemporalVertex lastNode = null;
 	private int lastStopSequence = -1;
 
 	int count = 0;
+
+	private Map<AgencyAndId, Stop> stopMap = new HashMap<AgencyAndId, Stop>();
+
+	private void addStop(Stop stop) {
+		this.stopMap.put(stop.getId(), stop);
+	}
+
+	private Stop findRequiredStop(AgencyAndId id) {
+		final Stop stop = this.stopMap.get(id);
+		if (stop == null) {
+			throw new IllegalStateException(MessageFormat.format(
+					"Stop for id [{0}] could not be found.", id));
+		} else {
+			return stop;
+		}
+	}
+
+	private Stop findParentStationStop(Stop stop) {
+		if (stop.getParentStation().isEmpty()) {
+			return null;
+		} else {
+			final AgencyAndId parentStopId = new AgencyAndId(stop.getId()
+					.getAgencyId(), stop.getParentStation());
+			return findRequiredStop(parentStopId);
+		}
+	}
 
 	public void addStopTime(StopTime stopTime) {
 
@@ -80,7 +98,7 @@ public class GtfsDirectedGraphBuilder {
 
 		final int stopSequence = stopTime.getStopSequence();
 		// logger.info("Stop sequence [" + stopSequence + "].");
-		final TemporalStopNode previousDepartureNode;
+		final TemporalVertex previousDepartureNode;
 		if (trip == lastTrip) {
 			if (stopSequence <= lastStopSequence) {
 				throw new IllegalStateException(
@@ -102,29 +120,33 @@ public class GtfsDirectedGraphBuilder {
 		final int arrivalTime = stopTime.getArrivalTime();
 		final int departureTime = stopTime.getDepartureTime();
 
-		final TemporalStopNode arrivalNode = new TemporalStopArrivalNode(stop,
+		final TemporalVertex arrivalNode = graphBuilder.addArrivalVertex(stop,
 				arrivalTime);
-		final TemporalStopNode departureNode = new TemporalStopDepartureNode(
+		final TemporalVertex departureNode = graphBuilder.addDepartureVertex(
 				stop, departureTime);
-		graph.addVertex(arrivalNode);
-		graph.addVertex(departureNode);
+
+		Stop parentStationStop = findParentStationStop(stop);
+
+		if (parentStationStop != null) {
+			final TemporalVertex parentStationArrivalVertex = graphBuilder
+					.addParentStationVertex(parentStationStop,
+							arrivalNode.getTime());
+			final TemporalVertex parentStationDepartureVertex = graphBuilder
+					.addParentStationVertex(parentStationStop,
+							departureNode.getTime());
+			graphBuilder.addChildParentEdge(arrivalNode,
+					parentStationArrivalVertex);
+			graphBuilder.addParentChildEdge(departureNode,
+					parentStationDepartureVertex);
+		}
 
 		if (previousDepartureNode != null) {
 			final int previousDepartureTime = previousDepartureNode.getTime();
-			final TransitionEdge departureArrivalTransitionEdge = new TransitionEdge(
-					TransitionType.DEPARTURE_ARRIVAL, arrivalTime
-							- previousDepartureTime);
-
-			// logger.info("Adding [" + previousDepartureNode + "--->"
-			// + arrivalNode + "]");
-			graph.addEdge(previousDepartureNode, arrivalNode,
-					departureArrivalTransitionEdge);
+			graphBuilder.addDepartureArrivalEdge(previousDepartureNode,
+					arrivalNode, arrivalTime - previousDepartureTime);
 		}
-		// logger.info("Adding [" + arrivalNode + "-" + departureNode + "]");
-		final TransitionEdge arrivalDepartureTransitionEdge = new TransitionEdge(
-				TransitionType.ARRIVAL_DEPARTURE, departureTime - arrivalTime);
-		graph.addEdge(arrivalNode, departureNode,
-				arrivalDepartureTransitionEdge);
+		graphBuilder.addArrivalDepartureEdge(arrivalNode, departureNode,
+				departureTime - arrivalTime);
 
 		lastTrip = trip;
 		lastNode = departureNode;
@@ -154,13 +176,5 @@ public class GtfsDirectedGraphBuilder {
 				&& serviceCalendarDate.getDate().equals(this.serviceDate)) {
 			availableServiceIds.add(serviceCalendarDate.getServiceId());
 		}
-	}
-
-	public GtfsMutableDao getGtfsMutableDao() {
-		return gtfsDao;
-	}
-
-	public DirectedGraph<TemporalStopNode, TransitionEdge> build() {
-		return graph;
 	}
 }
