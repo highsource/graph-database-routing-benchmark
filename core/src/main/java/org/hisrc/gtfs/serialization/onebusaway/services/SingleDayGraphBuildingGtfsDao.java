@@ -75,11 +75,12 @@ public class SingleDayGraphBuildingGtfsDao extends GtfsDaoImpl {
 	}
 
 	private Stop findParentStationStop(Stop stop) {
-		if (stop.getParentStation().isEmpty()) {
+		String parentStation = stop.getParentStation();
+		if (parentStation == null || parentStation.isEmpty()) {
 			return null;
 		} else {
 			final AgencyAndId parentStopId = new AgencyAndId(stop.getId()
-					.getAgencyId(), stop.getParentStation());
+					.getAgencyId(), parentStation);
 			return findRequiredStop(parentStopId);
 		}
 	}
@@ -97,7 +98,8 @@ public class SingleDayGraphBuildingGtfsDao extends GtfsDaoImpl {
 		}
 
 		// Find the previous departure vertex
-		final TemporalVertex previousDepartureVertex = graphBuilder.findPreviousTripStopDepartureVertex(stopTime);
+		final TemporalVertex previousDepartureVertex = graphBuilder
+				.findPreviousTripStopDepartureVertex(stopTime);
 
 		final Stop stop = stopTime.getStop();
 		final int arrivalTime = stopTime.getArrivalTime();
@@ -116,17 +118,19 @@ public class SingleDayGraphBuildingGtfsDao extends GtfsDaoImpl {
 			graphBuilder.addRideEdge(previousDepartureVertex, arrivalVertex,
 					arrivalTime - previousDepartureVertex.getTime());
 		}
-		
-		// Add a "stay in vehicle" edge in between the arrival and the next departure
+
+		// Add a "stay in vehicle" edge in between the arrival and the next
+		// departure
 		graphBuilder.addStayEdge(arrivalVertex, departureVertex, departureTime
 				- arrivalTime);
 
-		// Add arrival and departure stop time vertices and unboarding and boarding edges
-		final TemporalVertex arrivalStopTimeVertex = graphBuilder.addStopTimeVertex(stop,
-				arrivalTime);
+		// Add arrival and departure stop time vertices and unboarding and
+		// boarding edges
+		final TemporalVertex arrivalStopTimeVertex = graphBuilder
+				.addStopTimeVertex(stop, arrivalTime);
 		graphBuilder.addUnboardEdge(arrivalVertex, arrivalStopTimeVertex);
-		final TemporalVertex departureStopTimeVertex = graphBuilder.addStopTimeVertex(stop,
-				departureTime);
+		final TemporalVertex departureStopTimeVertex = graphBuilder
+				.addStopTimeVertex(stop, departureTime);
 		graphBuilder.addBoardEdge(departureStopTimeVertex, departureVertex);
 
 		Stop parentStationStop = findParentStationStop(stop);
