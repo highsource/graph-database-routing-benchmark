@@ -7,5 +7,9 @@ public class TransitionEdge {
 	public TransitionEdge(int cost) {
 		this.cost = cost;
 	}
+	
+	public int getCost() {
+		return cost;
+	}
 
 }

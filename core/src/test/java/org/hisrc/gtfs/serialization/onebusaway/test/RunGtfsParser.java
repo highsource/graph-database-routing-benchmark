@@ -16,30 +16,12 @@ import org.onebusaway.gtfs.services.GtfsMutableDao;
 
 public class RunGtfsParser {
 
-	// @Test
-	// public void parsesSWU() throws IOException, URISyntaxException {
-	// final GtfsReader gtfsReader = new GtfsReader();
-	// gtfsReader.getEntityClasses().remove(StopTime.class);
-	// gtfsReader.getEntityClasses().add(StopTime.class);
-	// final ZipFile zipFile = new ZipFile(new File("src/main/etc/swu.zip"));
-	// final ZipFileCsvInputSource csvInputSource = new ZipFileCsvInputSource(
-	// zipFile);
-	// gtfsReader.setInputSource(csvInputSource);
-	//
-	// final GraphBuilder graphBuilder = new JGraphTGraphBuilder();
-	// final GtfsMutableDao dao = new
-	// SingleDayGraphBuildingGtfsDao(graphBuilder, 2015,
-	// 07, 10);
-	// gtfsReader.setEntityStore(dao);
-	// gtfsReader.run();
-	// }
-
 	@Test
-	public void parsesVBB() throws IOException, URISyntaxException {
+	public void parsesSWU() throws IOException, URISyntaxException {
 		final GtfsReader gtfsReader = new GtfsReader();
 		gtfsReader.getEntityClasses().remove(StopTime.class);
 		gtfsReader.getEntityClasses().add(StopTime.class);
-		final ZipFile zipFile = new ZipFile(new File("src/main/etc/vbb.zip"));
+		final ZipFile zipFile = new ZipFile(new File("src/main/etc/swu.zip"));
 		final ZipFileCsvInputSource csvInputSource = new ZipFileCsvInputSource(
 				zipFile);
 		gtfsReader.setInputSource(csvInputSource);
@@ -49,6 +31,26 @@ public class RunGtfsParser {
 				graphBuilder, 2015, 07, 10);
 		gtfsReader.setEntityStore(dao);
 		gtfsReader.run();
+		graphBuilder.build();
 	}
+
+	// @Test
+	// public void parsesVBB() throws IOException, URISyntaxException {
+	// final GtfsReader gtfsReader = new GtfsReader();
+	// gtfsReader.getEntityClasses().remove(StopTime.class);
+	// gtfsReader.getEntityClasses().add(StopTime.class);
+	// final ZipFile zipFile = new ZipFile(new File("src/main/etc/vbb.zip"));
+	// final ZipFileCsvInputSource csvInputSource = new ZipFileCsvInputSource(
+	// zipFile);
+	// gtfsReader.setInputSource(csvInputSource);
+	//
+	// final GraphBuilder graphBuilder = new JGraphTGraphBuilder();
+	// final GtfsMutableDao dao = new SingleDayGraphBuildingGtfsDao(
+	// graphBuilder, 2015, 07, 10);
+	// gtfsReader.setEntityStore(dao);
+	// gtfsReader.run();
+	//
+	// graphBuilder.build();
+	// }
 
 }

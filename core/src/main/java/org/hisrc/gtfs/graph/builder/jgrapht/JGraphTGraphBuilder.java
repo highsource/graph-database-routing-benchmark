@@ -1,7 +1,8 @@
 package org.hisrc.gtfs.graph.builder.jgrapht;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.text.MessageFormat;
+import java.util.Collection;
+import java.util.Map.Entry;
 
 import org.hisrc.gtfs.graph.builder.GraphBuilder;
 import org.hisrc.gtfs.graph.model.edge.BoardEdge;
@@ -9,21 +10,25 @@ import org.hisrc.gtfs.graph.model.edge.ChildParentEdge;
 import org.hisrc.gtfs.graph.model.edge.ParentChildEdge;
 import org.hisrc.gtfs.graph.model.edge.RideEdge;
 import org.hisrc.gtfs.graph.model.edge.StayEdge;
+import org.hisrc.gtfs.graph.model.edge.TransferEdge;
 import org.hisrc.gtfs.graph.model.edge.TransitionEdge;
 import org.hisrc.gtfs.graph.model.edge.UnboardEdge;
-import org.hisrc.gtfs.graph.model.vertex.ParentStationVertex;
+import org.hisrc.gtfs.graph.model.edge.WaitEdge;
+import org.hisrc.gtfs.graph.model.util.TimeAwareComparator;
 import org.hisrc.gtfs.graph.model.vertex.StopTimeVertex;
 import org.hisrc.gtfs.graph.model.vertex.TemporalVertex;
-import org.hisrc.gtfs.graph.model.vertex.TripStopArrivalVertex;
-import org.hisrc.gtfs.graph.model.vertex.TripStopDepartureVertex;
+import org.hisrc.gtfs.graph.model.vertex.TripStopTimeVertex;
+import org.hisrc.gtfs.onebusaway.model.util.StopComparator;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.EdgeFactory;
 import org.jgrapht.graph.DirectedMultigraph;
 import org.onebusaway.gtfs.model.Stop;
-import org.onebusaway.gtfs.model.StopTime;
 import org.onebusaway.gtfs.model.Trip;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
 
 public class JGraphTGraphBuilder implements GraphBuilder {
 
@@ -38,68 +43,21 @@ public class JGraphTGraphBuilder implements GraphBuilder {
 				}
 			});
 
-	public TemporalVertex addParentStationVertex(Stop stop, int time) {
-		final ParentStationVertex vertex = new ParentStationVertex(stop, time);
+	@Override
+	public TemporalVertex addTripStopTimeVertex(Trip trip, Stop stop, int time) {
+		final TemporalVertex vertex = new TripStopTimeVertex(trip, stop, time);
 		graph.addVertex(vertex);
 		return vertex;
 	}
 
-	@Override
-	public TemporalVertex addTripStopArrivalVertex(StopTime stopTime) {
-		final TemporalVertex vertex = new TripStopArrivalVertex(
-				stopTime.getTrip(), stopTime.getStop(),
-				stopTime.getArrivalTime());
-		graph.addVertex(vertex);
-		return vertex;
-	}
-
-	private Trip lastTrip = null;
-	private TemporalVertex lastTripStopDepartureVertex = null;
-	private int lastStopSequence = -1;
-
-	@Override
-	public TemporalVertex addTripStopDepartureVertex(StopTime stopTime) {
-		final TemporalVertex vertex = new TripStopDepartureVertex(
-				stopTime.getTrip(), stopTime.getStop(),
-				stopTime.getDepartureTime());
-		graph.addVertex(vertex);
-		
-		lastTrip = stopTime.getTrip();
-		lastTripStopDepartureVertex = vertex;
-		lastStopSequence = stopTime.getStopSequence();
-		return vertex;
-	}
-	
-	private Set<Trip> processedTrips = new HashSet<Trip>();
-	
-	@Override
-	public TemporalVertex findPreviousTripStopDepartureVertex(StopTime stopTime) {
-		final Trip trip = stopTime.getTrip();
-		final int stopSequence = stopTime.getStopSequence();
-		final TemporalVertex previousDepartureNode;
-		if (trip == lastTrip) {
-			if (stopSequence <= lastStopSequence) {
-				throw new IllegalStateException(
-						"Stop sequence must be greater than the last stop sequence.");
-			} else {
-				previousDepartureNode = lastTripStopDepartureVertex;
-			}
-		} else {
-			if (processedTrips.contains(trip)) {
-				throw new IllegalStateException(
-						"Trip was already processed and now appears again.");
-			} else {
-				processedTrips.add(lastTrip);
-				previousDepartureNode = null;
-			}
-		}
-		return previousDepartureNode;
-	}
+	private Multimap<Stop, TemporalVertex> stopTimeVerticesByStop = TreeMultimap
+			.create(StopComparator.create(), TimeAwareComparator.create());
 
 	@Override
 	public TemporalVertex addStopTimeVertex(Stop stop, int time) {
 		final TemporalVertex vertex = new StopTimeVertex(stop, time);
 		graph.addVertex(vertex);
+		stopTimeVerticesByStop.put(stop, vertex);
 		return vertex;
 	}
 
@@ -148,4 +106,52 @@ public class JGraphTGraphBuilder implements GraphBuilder {
 		return edge;
 	}
 
+	@Override
+	public TransitionEdge addTransferEdge(TemporalVertex sourceVertex,
+			TemporalVertex targetVertex, int cost) {
+		final TransitionEdge edge = new TransferEdge(cost);
+		graph.addEdge(sourceVertex, targetVertex, edge);
+		return edge;
+	}
+
+	@Override
+	public TransitionEdge addWaitEdge(TemporalVertex sourceVertex,
+			TemporalVertex targetVertex, int waitTime) {
+		final TransitionEdge edge = new WaitEdge(waitTime);
+		graph.addEdge(sourceVertex, targetVertex, edge);
+		return edge;
+	}
+
+	private void addWaitEdges() {
+		for (Entry<Stop, Collection<TemporalVertex>> entry : stopTimeVerticesByStop
+				.asMap().entrySet()) {
+
+			final Stop stop = entry.getKey();
+
+			final Collection<TemporalVertex> stopTimeVertices = entry
+					.getValue();
+
+			TemporalVertex lastVertex = null;
+
+			for (TemporalVertex currentVertex : stopTimeVertices) {
+				if (lastVertex != null) {
+					int waitTime = currentVertex.getTime()
+							- lastVertex.getTime();
+					addWaitEdge(lastVertex, currentVertex, waitTime);
+				}
+				lastVertex = currentVertex;
+			}
+		}
+	}
+
+	@Override
+	public void build() {
+		// TODO Auto-generated method stub
+		addWaitEdges();
+		logger.info(MessageFormat.format(
+				"Created a graph with [{0}] vertices.", graph.vertexSet()
+						.size()));
+		logger.info(MessageFormat.format("Created a graph with [{0}] edges.",
+				graph.edgeSet().size()));
+	}
 }
