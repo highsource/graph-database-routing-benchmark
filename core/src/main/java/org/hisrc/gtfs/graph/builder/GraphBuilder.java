@@ -3,21 +3,25 @@ package org.hisrc.gtfs.graph.builder;
 import org.hisrc.gtfs.graph.model.edge.TransitionEdge;
 import org.hisrc.gtfs.graph.model.vertex.TemporalVertex;
 import org.onebusaway.gtfs.model.Stop;
+import org.onebusaway.gtfs.model.StopTime;
+import org.onebusaway.gtfs.model.Trip;
 
 public interface GraphBuilder {
+	
+	public TemporalVertex findPreviousTripStopDepartureVertex(StopTime stopTime);
+
+	public TemporalVertex addTripStopArrivalVertex(StopTime stopTime);
+
+	public TemporalVertex addTripStopDepartureVertex(StopTime stopTime);
+
+	public TemporalVertex addStopTimeVertex(Stop stop, int time);
 
 	public TemporalVertex addParentStationVertex(Stop stop, int time);
 
-	public TemporalVertex addArrivalVertex(final Stop stop,
-			final int arrivalTime);
-
-	public TemporalVertex addDepartureVertex(final Stop stop,
-			final int departureTime);
-
-	public TransitionEdge addArrivalDepartureEdge(TemporalVertex arrivalVertex,
+	public TransitionEdge addStayEdge(TemporalVertex arrivalVertex,
 			TemporalVertex departureVertex, int cost);
 
-	public TransitionEdge addDepartureArrivalEdge(TemporalVertex arrivalVertex,
+	public TransitionEdge addRideEdge(TemporalVertex arrivalVertex,
 			TemporalVertex departureVertex, int cost);
 
 	public TransitionEdge addParentChildEdge(TemporalVertex parentVertex,
@@ -26,4 +30,10 @@ public interface GraphBuilder {
 	public TransitionEdge addChildParentEdge(TemporalVertex childVertex,
 			TemporalVertex parentVertex);
 
+	public TransitionEdge addUnboardEdge(TemporalVertex arrivalVertex,
+			TemporalVertex arrivalStopTimeVertex);
+
+	public TransitionEdge addBoardEdge(TemporalVertex departureStopTimeVertex,
+			TemporalVertex departureVertex);
+	
 }

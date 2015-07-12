@@ -56,11 +56,6 @@ public class SingleDayGraphBuildingGtfsDao extends GtfsDaoImpl {
 		}
 	}
 
-	private Set<Trip> processedTrips = new HashSet<Trip>();
-	private Trip lastTrip = null;
-	private TemporalVertex lastNode = null;
-	private int lastStopSequence = -1;
-
 	int count = 0;
 
 	private Map<AgencyAndId, Stop> stopMap = new HashMap<AgencyAndId, Stop>();
@@ -90,71 +85,68 @@ public class SingleDayGraphBuildingGtfsDao extends GtfsDaoImpl {
 	}
 
 	public void addStopTime(StopTime stopTime) {
+		if (count % 10000 == 0) {
+			logger.info("" + count);
+		}
+		count++;
 
 		final Trip trip = stopTime.getTrip();
-		if (!availableServiceIds.contains(trip.getServiceId())) {
+		// Filter out the trip if it is not relevant
+		if (!isRelevantTrip(trip)) {
 			return;
 		}
 
-		final int stopSequence = stopTime.getStopSequence();
-		// logger.info("Stop sequence [" + stopSequence + "].");
-		final TemporalVertex previousDepartureNode;
-		if (trip == lastTrip) {
-			if (stopSequence <= lastStopSequence) {
-				throw new IllegalStateException(
-						"Stop sequence must be greater than the last stop sequence.");
-			} else {
-				previousDepartureNode = lastNode;
-			}
-		} else {
-			if (processedTrips.contains(trip)) {
-				throw new IllegalStateException(
-						"Trip was already processed and now appears again.");
-			} else {
-				processedTrips.add(lastTrip);
-				previousDepartureNode = null;
-			}
-		}
+		// Find the previous departure vertex
+		final TemporalVertex previousDepartureVertex = graphBuilder.findPreviousTripStopDepartureVertex(stopTime);
 
 		final Stop stop = stopTime.getStop();
 		final int arrivalTime = stopTime.getArrivalTime();
 		final int departureTime = stopTime.getDepartureTime();
 
-		final TemporalVertex arrivalNode = graphBuilder.addArrivalVertex(stop,
+		// Add arrival and departure vertices
+		final TemporalVertex arrivalVertex = graphBuilder
+				.addTripStopArrivalVertex(stopTime);
+		final TemporalVertex departureVertex = graphBuilder
+				.addTripStopDepartureVertex(stopTime);
+
+		// If there was a previous departure vertex (that is, this stop time is
+		// not the first in the sequence, add a ride edge from last departure to
+		// current arrival
+		if (previousDepartureVertex != null) {
+			graphBuilder.addRideEdge(previousDepartureVertex, arrivalVertex,
+					arrivalTime - previousDepartureVertex.getTime());
+		}
+		
+		// Add a "stay in vehicle" edge in between the arrival and the next departure
+		graphBuilder.addStayEdge(arrivalVertex, departureVertex, departureTime
+				- arrivalTime);
+
+		// Add arrival and departure stop time vertices and unboarding and boarding edges
+		final TemporalVertex arrivalStopTimeVertex = graphBuilder.addStopTimeVertex(stop,
 				arrivalTime);
-		final TemporalVertex departureNode = graphBuilder.addDepartureVertex(
-				stop, departureTime);
+		graphBuilder.addUnboardEdge(arrivalVertex, arrivalStopTimeVertex);
+		final TemporalVertex departureStopTimeVertex = graphBuilder.addStopTimeVertex(stop,
+				departureTime);
+		graphBuilder.addBoardEdge(departureStopTimeVertex, departureVertex);
 
 		Stop parentStationStop = findParentStationStop(stop);
 
 		if (parentStationStop != null) {
 			final TemporalVertex parentStationArrivalVertex = graphBuilder
 					.addParentStationVertex(parentStationStop,
-							arrivalNode.getTime());
+							arrivalVertex.getTime());
 			final TemporalVertex parentStationDepartureVertex = graphBuilder
 					.addParentStationVertex(parentStationStop,
-							departureNode.getTime());
-			graphBuilder.addChildParentEdge(arrivalNode,
+							departureVertex.getTime());
+			graphBuilder.addChildParentEdge(arrivalVertex,
 					parentStationArrivalVertex);
-			graphBuilder.addParentChildEdge(departureNode,
+			graphBuilder.addParentChildEdge(departureVertex,
 					parentStationDepartureVertex);
 		}
+	}
 
-		if (previousDepartureNode != null) {
-			final int previousDepartureTime = previousDepartureNode.getTime();
-			graphBuilder.addDepartureArrivalEdge(previousDepartureNode,
-					arrivalNode, arrivalTime - previousDepartureTime);
-		}
-		graphBuilder.addArrivalDepartureEdge(arrivalNode, departureNode,
-				departureTime - arrivalTime);
-
-		lastTrip = trip;
-		lastNode = departureNode;
-		lastStopSequence = stopTime.getStopSequence();
-		if (count % 10000 == 0) {
-			logger.info("" + count);
-		}
-		count++;
+	public boolean isRelevantTrip(final Trip trip) {
+		return availableServiceIds.contains(trip.getServiceId());
 	}
 
 	private void addServiceCalendar(ServiceCalendar serviceCalendar) {

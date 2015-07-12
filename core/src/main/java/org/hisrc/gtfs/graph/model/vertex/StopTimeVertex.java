@@ -2,9 +2,9 @@ package org.hisrc.gtfs.graph.model.vertex;
 
 import org.onebusaway.gtfs.model.Stop;
 
-public class ArrivalVertex extends TemporalVertex {
+public class StopTimeVertex extends TemporalVertex {
 
-	public ArrivalVertex(Stop stop, int time) {
+	public StopTimeVertex(Stop stop, int time) {
 		super(stop, time);
 	}
 
