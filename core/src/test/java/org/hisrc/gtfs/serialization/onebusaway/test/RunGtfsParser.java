@@ -36,12 +36,21 @@ public class RunGtfsParser {
 		gtfsReader.run();
 		final GraphService graphService = graphBuilder.build();
 
-		final int startTime = 12 * 60 * 60;
-		final TemporalVertex start = graphService
-				.findLatestTemporalVertexByStopIdBefore("SWU_9001070",
-						startTime);
-		Assert.assertNotNull(start);
-		Assert.assertTrue(start.getTime() <= startTime);
+//		final int startTime = 12 * 60 * 60;
+//		final TemporalVertex start = graphService
+//				.findLatestTemporalVertexByStopIdBefore("SWU_900107011",
+//						startTime);
+//		Assert.assertNotNull(start);
+//		Assert.assertTrue(start.getTime() <= startTime);
+//
+//		final int endTime = 14 * 60 * 60;
+//		final TemporalVertex end = graphService
+//				.findLatestTemporalVertexByStopIdBefore("SWU_9001635",
+//						startTime);
+
+		graphService.findShortestPathStartingAfter("SWU_9001070",
+				"SWU_9001635", 12 * 60 * 60);
+
 	}
 
 	// @Test

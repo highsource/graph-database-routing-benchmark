@@ -63,8 +63,8 @@ public class JGraphTGraphServiceBuilder implements GraphServiceBuilder {
 		return vertex;
 	}
 
-	public TransitionEdge addParentChildEdge(final TemporalVertex childVertex,
-			final TemporalVertex parentVertex) {
+	public TransitionEdge addParentChildEdge(final TemporalVertex parentVertex,
+			final TemporalVertex childVertex) {
 		final ParentChildEdge edge = new ParentChildEdge();
 		graph.addEdge(parentVertex, childVertex, edge);
 

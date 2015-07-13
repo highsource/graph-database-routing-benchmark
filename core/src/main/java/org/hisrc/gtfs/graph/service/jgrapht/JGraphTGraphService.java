@@ -2,6 +2,7 @@ package org.hisrc.gtfs.graph.service.jgrapht;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 
@@ -13,6 +14,7 @@ import org.hisrc.gtfs.graph.model.vertex.TemporalVertex;
 import org.hisrc.gtfs.graph.service.GraphService;
 import org.hisrc.util.ComparableComparator;
 import org.jgrapht.DirectedGraph;
+import org.jgrapht.alg.DijkstraShortestPath;
 import org.onebusaway.gtfs.model.Stop;
 
 import com.google.common.collect.TreeMultimap;
@@ -74,6 +76,13 @@ public class JGraphTGraphService implements GraphService {
 	@Override
 	public Path findShortestPathStartingAfter(String fromStopId,
 			String toStopId, int time) {
+		
+		final TemporalVertex start = findLatestTemporalVertexByStopIdBefore(fromStopId,
+				time);
+		
+		final TemporalVertex end = findLatestTemporalVertexByStopIdBefore(toStopId, time + (60 * 60));
+		
+		List<TransitionEdge> path = DijkstraShortestPath.findPathBetween(this.graph, start, end);
 		throw new UnsupportedOperationException();
 	}
 

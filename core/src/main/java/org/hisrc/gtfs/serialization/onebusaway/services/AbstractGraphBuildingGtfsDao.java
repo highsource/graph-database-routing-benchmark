@@ -95,7 +95,7 @@ public abstract class AbstractGraphBuildingGtfsDao extends GtfsDaoImpl {
 			return findRequiredStop(parentStopId);
 		}
 	}
-	
+
 	private Trip lastTrip = null;
 	private TemporalVertex lastTripStopDepartureVertex = null;
 	private int lastStopSequence = -1;
@@ -203,6 +203,10 @@ public abstract class AbstractGraphBuildingGtfsDao extends GtfsDaoImpl {
 				addChildParentEdge(toStop, transferEndVertex, transferEndTime);
 			}
 		}
+
+		lastTrip = stopTime.getTrip();
+		lastTripStopDepartureVertex = departureVertex;
+		lastStopSequence = stopTime.getStopSequence();
 	}
 
 	private void addChildParentEdge(final Stop stop,
