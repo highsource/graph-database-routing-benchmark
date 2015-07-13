@@ -7,4 +7,9 @@ public class StopTimeVertex extends TemporalVertex {
 	public StopTimeVertex(Stop stop, int time) {
 		super(stop, time);
 	}
+
+	@Override
+	public boolean isEntryVertex() {
+		return true;
+	}
 }

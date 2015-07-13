@@ -1,10 +1,8 @@
-package org.hisrc.gtfs.graph.builder.jgrapht;
+package org.hisrc.gtfs.graph.servicebuilder.jgrapht;
 
-import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Map.Entry;
 
-import org.hisrc.gtfs.graph.builder.GraphBuilder;
 import org.hisrc.gtfs.graph.model.edge.BoardEdge;
 import org.hisrc.gtfs.graph.model.edge.ChildParentEdge;
 import org.hisrc.gtfs.graph.model.edge.ParentChildEdge;
@@ -18,6 +16,9 @@ import org.hisrc.gtfs.graph.model.util.TimeAwareComparator;
 import org.hisrc.gtfs.graph.model.vertex.StopTimeVertex;
 import org.hisrc.gtfs.graph.model.vertex.TemporalVertex;
 import org.hisrc.gtfs.graph.model.vertex.TripStopTimeVertex;
+import org.hisrc.gtfs.graph.service.GraphService;
+import org.hisrc.gtfs.graph.service.jgrapht.JGraphTGraphService;
+import org.hisrc.gtfs.graph.servicebuilder.GraphServiceBuilder;
 import org.hisrc.gtfs.onebusaway.model.util.StopComparator;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.EdgeFactory;
@@ -30,9 +31,10 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 
-public class JGraphTGraphBuilder implements GraphBuilder {
+public class JGraphTGraphServiceBuilder implements GraphServiceBuilder {
 
-	private Logger logger = LoggerFactory.getLogger(JGraphTGraphBuilder.class);
+	private Logger logger = LoggerFactory
+			.getLogger(JGraphTGraphServiceBuilder.class);
 
 	private DirectedGraph<TemporalVertex, TransitionEdge> graph = new DirectedMultigraph<TemporalVertex, TransitionEdge>(
 			new EdgeFactory<TemporalVertex, TransitionEdge>() {
@@ -145,13 +147,8 @@ public class JGraphTGraphBuilder implements GraphBuilder {
 	}
 
 	@Override
-	public void build() {
-		// TODO Auto-generated method stub
+	public GraphService build() {
 		addWaitEdges();
-		logger.info(MessageFormat.format(
-				"Created a graph with [{0}] vertices.", graph.vertexSet()
-						.size()));
-		logger.info(MessageFormat.format("Created a graph with [{0}] edges.",
-				graph.edgeSet().size()));
+		return new JGraphTGraphService(this.graph);
 	}
 }

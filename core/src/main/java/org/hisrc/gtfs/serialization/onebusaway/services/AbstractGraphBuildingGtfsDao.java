@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.Validate;
-import org.hisrc.gtfs.graph.builder.GraphBuilder;
 import org.hisrc.gtfs.graph.model.vertex.TemporalVertex;
+import org.hisrc.gtfs.graph.servicebuilder.GraphServiceBuilder;
 import org.onebusaway.gtfs.impl.GtfsDaoImpl;
 import org.onebusaway.gtfs.model.AgencyAndId;
 import org.onebusaway.gtfs.model.Stop;
@@ -29,11 +29,11 @@ public abstract class AbstractGraphBuildingGtfsDao extends GtfsDaoImpl {
 
 	protected abstract boolean isRelevantTrip(final Trip trip);
 
-	protected final GraphBuilder graphBuilder;
+	protected final GraphServiceBuilder graphBuilder;
 	private Multimap<Stop, Transfer> incomingTransfersByStop = HashMultimap
 			.create();
 
-	public AbstractGraphBuildingGtfsDao(GraphBuilder graphBuilder) {
+	public AbstractGraphBuildingGtfsDao(GraphServiceBuilder graphBuilder) {
 		this.graphBuilder = Validate.notNull(graphBuilder);
 	}
 

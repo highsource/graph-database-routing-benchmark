@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.lang3.Validate;
-import org.hisrc.gtfs.graph.builder.GraphBuilder;
+import org.hisrc.gtfs.graph.servicebuilder.GraphServiceBuilder;
 import org.joda.time.LocalDate;
 import org.onebusaway.gtfs.model.AgencyAndId;
 import org.onebusaway.gtfs.model.ServiceCalendar;
@@ -18,7 +18,7 @@ public class SingleDayGraphBuildingGtfsDao extends AbstractGraphBuildingGtfsDao 
 	protected final int dayOfWeek;
 	protected final Set<AgencyAndId> availableServiceIds = new HashSet<AgencyAndId>();
 
-	public SingleDayGraphBuildingGtfsDao(GraphBuilder graphBuilder, int year,
+	public SingleDayGraphBuildingGtfsDao(GraphServiceBuilder graphBuilder, int year,
 			int month, int day) {
 		super(graphBuilder);
 		this.serviceDate = new ServiceDate(year, month, day);

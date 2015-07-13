@@ -24,6 +24,8 @@ public abstract class TemporalVertex implements TimeAware {
 		return time;
 	}
 	
+	public abstract boolean isEntryVertex();
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;

@@ -1,11 +1,12 @@
-package org.hisrc.gtfs.graph.builder;
+package org.hisrc.gtfs.graph.servicebuilder;
 
 import org.hisrc.gtfs.graph.model.edge.TransitionEdge;
 import org.hisrc.gtfs.graph.model.vertex.TemporalVertex;
+import org.hisrc.gtfs.graph.service.GraphService;
 import org.onebusaway.gtfs.model.Stop;
 import org.onebusaway.gtfs.model.Trip;
 
-public interface GraphBuilder {
+public interface GraphServiceBuilder {
 
 	public TemporalVertex addTripStopTimeVertex(Trip trip, Stop stop, int time);
 
@@ -35,6 +36,6 @@ public interface GraphBuilder {
 	public TransitionEdge addWaitEdge(TemporalVertex sourceVertex,
 			TemporalVertex targetVertex, int waitTime);
 
-	public void build();
+	public GraphService build();
 
 }

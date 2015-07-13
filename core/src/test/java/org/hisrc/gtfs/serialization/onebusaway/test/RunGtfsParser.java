@@ -5,10 +5,13 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.zip.ZipFile;
 
-import org.hisrc.gtfs.graph.builder.GraphBuilder;
-import org.hisrc.gtfs.graph.builder.jgrapht.JGraphTGraphBuilder;
+import org.hisrc.gtfs.graph.model.vertex.TemporalVertex;
+import org.hisrc.gtfs.graph.service.GraphService;
+import org.hisrc.gtfs.graph.servicebuilder.GraphServiceBuilder;
+import org.hisrc.gtfs.graph.servicebuilder.jgrapht.JGraphTGraphServiceBuilder;
 import org.hisrc.gtfs.serialization.onebusaway.GtfsReader;
 import org.hisrc.gtfs.serialization.onebusaway.services.SingleDayGraphBuildingGtfsDao;
+import org.junit.Assert;
 import org.junit.Test;
 import org.onebusaway.csv_entities.ZipFileCsvInputSource;
 import org.onebusaway.gtfs.model.StopTime;
@@ -26,12 +29,19 @@ public class RunGtfsParser {
 				zipFile);
 		gtfsReader.setInputSource(csvInputSource);
 
-		final GraphBuilder graphBuilder = new JGraphTGraphBuilder();
+		final GraphServiceBuilder graphBuilder = new JGraphTGraphServiceBuilder();
 		final GtfsMutableDao dao = new SingleDayGraphBuildingGtfsDao(
 				graphBuilder, 2015, 07, 10);
 		gtfsReader.setEntityStore(dao);
 		gtfsReader.run();
-		graphBuilder.build();
+		final GraphService graphService = graphBuilder.build();
+
+		final int startTime = 12 * 60 * 60;
+		final TemporalVertex start = graphService
+				.findLatestTemporalVertexByStopIdBefore("SWU_9001070",
+						startTime);
+		Assert.assertNotNull(start);
+		Assert.assertTrue(start.getTime() <= startTime);
 	}
 
 	// @Test

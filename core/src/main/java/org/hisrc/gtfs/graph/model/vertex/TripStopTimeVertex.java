@@ -17,6 +17,11 @@ public class TripStopTimeVertex extends TemporalVertex {
 	}
 
 	@Override
+	public boolean isEntryVertex() {
+		return false;
+	}
+
+	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
