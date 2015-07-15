@@ -5,12 +5,15 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.zip.ZipFile;
 
-import org.hisrc.gtfs.graph.model.vertex.TemporalVertex;
-import org.hisrc.gtfs.graph.service.GraphService;
-import org.hisrc.gtfs.graph.servicebuilder.GraphServiceBuilder;
-import org.hisrc.gtfs.graph.servicebuilder.jgrapht.JGraphTGraphServiceBuilder;
-import org.hisrc.gtfs.serialization.onebusaway.GtfsReader;
-import org.hisrc.gtfs.serialization.onebusaway.services.SingleDayGraphBuildingGtfsDao;
+import org.hisrc.distant.graph.model.edge.TransitEdge;
+import org.hisrc.distant.graph.model.vertex.StopVertex;
+import org.hisrc.distant.jgrapht.FailingEdgeFactory;
+import org.hisrc.distant.onebusaway.gtfs.impl.FilterSingleDayGtfsEntityHandler;
+import org.hisrc.distant.onebusaway.gtfs.impl.GraphBuildingGtfsEntityHandler;
+import org.hisrc.distant.onebusaway.gtfs.impl.GtfsEntityHandlingDaoImpl;
+import org.hisrc.distant.onebusaway.gtfs.serialization.GtfsReader;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.graph.DirectedPseudograph;
 import org.junit.Assert;
 import org.junit.Test;
 import org.onebusaway.csv_entities.ZipFileCsvInputSource;
@@ -29,28 +32,17 @@ public class RunGtfsParser {
 				zipFile);
 		gtfsReader.setInputSource(csvInputSource);
 
-		final GraphServiceBuilder graphBuilder = new JGraphTGraphServiceBuilder();
-		final GtfsMutableDao dao = new SingleDayGraphBuildingGtfsDao(
-				graphBuilder, 2015, 07, 10);
+		final DirectedGraph<StopVertex, TransitEdge> graph = new DirectedPseudograph<StopVertex, TransitEdge>(
+				FailingEdgeFactory.<StopVertex, TransitEdge> create());
+
+		final GtfsMutableDao dao = new GtfsEntityHandlingDaoImpl(
+				new FilterSingleDayGtfsEntityHandler(
+						new GraphBuildingGtfsEntityHandler(graph), 2015, 07, 10));
 		gtfsReader.setEntityStore(dao);
 		gtfsReader.run();
-		final GraphService graphService = graphBuilder.build();
 
-//		final int startTime = 12 * 60 * 60;
-//		final TemporalVertex start = graphService
-//				.findLatestTemporalVertexByStopIdBefore("SWU_900107011",
-//						startTime);
-//		Assert.assertNotNull(start);
-//		Assert.assertTrue(start.getTime() <= startTime);
-//
-//		final int endTime = 14 * 60 * 60;
-//		final TemporalVertex end = graphService
-//				.findLatestTemporalVertexByStopIdBefore("SWU_9001635",
-//						startTime);
-
-		graphService.findShortestPathStartingAfter("SWU_9001070",
-				"SWU_9001635", 12 * 60 * 60);
-
+		Assert.assertEquals(773, graph.vertexSet().size());
+		Assert.assertEquals(36743, graph.edgeSet().size());
 	}
 
 	// @Test
