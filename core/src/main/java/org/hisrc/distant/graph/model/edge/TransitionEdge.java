@@ -1,6 +1,6 @@
 package org.hisrc.distant.graph.model.edge;
 
-public abstract class TransitEdge {
+public abstract class TransitionEdge {
 
 	/**
 	 * Searches for the transit with the earliest arrival starting not earlier
@@ -11,7 +11,7 @@ public abstract class TransitEdge {
 	 * @return The found transit object or null if there are not transits not
 	 *         earlier than the given point.
 	 */
-	public abstract Transit after(int timepoint);
+	public abstract Transition after(int timepoint);
 
 	/**
 	 * Returns the estimated length of the edge in meters, -1 for unknown, 0 for

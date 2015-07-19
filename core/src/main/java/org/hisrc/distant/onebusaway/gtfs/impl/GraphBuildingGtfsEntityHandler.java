@@ -9,10 +9,11 @@ import java.util.Set;
 import org.hisrc.distant.graph.model.edge.EquivalentEdge;
 import org.hisrc.distant.graph.model.edge.RideEdge;
 import org.hisrc.distant.graph.model.edge.TransferEdge;
-import org.hisrc.distant.graph.model.edge.Transit;
-import org.hisrc.distant.graph.model.edge.TransitEdge;
+import org.hisrc.distant.graph.model.edge.Transition;
+import org.hisrc.distant.graph.model.edge.TransitionEdge;
 import org.hisrc.distant.graph.model.vertex.StopVertex;
 import org.jgrapht.DirectedGraph;
+import org.onebusaway.gtfs.model.AgencyAndId;
 import org.onebusaway.gtfs.model.Stop;
 import org.onebusaway.gtfs.model.StopTime;
 import org.onebusaway.gtfs.model.Transfer;
@@ -23,10 +24,10 @@ import com.google.common.collect.Multimap;
 
 public class GraphBuildingGtfsEntityHandler extends DefaultGtfsEntityHandler {
 
-	private final DirectedGraph<StopVertex, TransitEdge> graph;
+	private final DirectedGraph<StopVertex, TransitionEdge> graph;
 
 	public GraphBuildingGtfsEntityHandler(
-			DirectedGraph<StopVertex, TransitEdge> graph) {
+			DirectedGraph<StopVertex, TransitionEdge> graph) {
 		this.graph = graph;
 	}
 
@@ -36,8 +37,16 @@ public class GraphBuildingGtfsEntityHandler extends DefaultGtfsEntityHandler {
 
 	@Override
 	public void handleStop(Stop stop) {
+		final String parentStation = stop.getParentStation();
+		final String parentStopId;
+		if (!(parentStation == null || parentStation.isEmpty())) {
+			parentStopId = new AgencyAndId(stop.getId().getAgencyId(),
+					parentStation).toString();
+		} else {
+			parentStopId = null;
+		}
 		addStopVertex(stop.getId().toString(), stop.getName(), stop.getLat(),
-				stop.getLon(), stop.getParentStation());
+				stop.getLon(), parentStopId);
 	}
 
 	private Trip lastTrip = null;
@@ -99,7 +108,7 @@ public class GraphBuildingGtfsEntityHandler extends DefaultGtfsEntityHandler {
 
 		final Collection<String> childStopIds = this.childStopIdsByParentStopId
 				.get(stopId);
-		if (childStopIds != null) {
+		if (childStopIds != null && !childStopIds.isEmpty()) {
 			for (String childStopId : childStopIds) {
 				addEquivalentEdges(stopId, childStopId);
 			}
@@ -118,7 +127,7 @@ public class GraphBuildingGtfsEntityHandler extends DefaultGtfsEntityHandler {
 		final StopVertex v1 = this.stopVerticesById.get(stopId1);
 		final StopVertex v2 = this.stopVerticesById.get(stopId2);
 		this.graph.addEdge(v1, v2, new EquivalentEdge());
-		this.graph.addEdge(v2, v2, new EquivalentEdge());
+		this.graph.addEdge(v2, v1, new EquivalentEdge());
 	}
 
 	private void addTransferEdge(String fromStopId, String toStopId,
@@ -133,18 +142,20 @@ public class GraphBuildingGtfsEntityHandler extends DefaultGtfsEntityHandler {
 			int fromDepartureTime, int toArrivalTime) {
 		final StopVertex v1 = this.stopVerticesById.get(fromStopId);
 		final StopVertex v2 = this.stopVerticesById.get(toStopId);
-		final Set<TransitEdge> edges = this.graph.getAllEdges(v1, v2);
+		final Set<TransitionEdge> edges = this.graph.getAllEdges(v1, v2);
 		RideEdge edge = null;
 		if (edges != null) {
-			for (TransitEdge e : edges) {
+			for (TransitionEdge e : edges) {
 				if (e instanceof RideEdge) {
 					edge = (RideEdge) e;
 					break;
 				}
 			}
-			edge = new RideEdge();
-			this.graph.addEdge(v1, v2, edge);
+			if (edge == null) {
+				edge = new RideEdge();
+				this.graph.addEdge(v1, v2, edge);
+			}
 		}
-		edge.addTransit(new Transit(fromDepartureTime, toArrivalTime));
+		edge.addTransit(new Transition(fromDepartureTime, toArrivalTime));
 	}
 }

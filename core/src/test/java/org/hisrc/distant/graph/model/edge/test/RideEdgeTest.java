@@ -1,7 +1,7 @@
 package org.hisrc.distant.graph.model.edge.test;
 
 import org.hisrc.distant.graph.model.edge.RideEdge;
-import org.hisrc.distant.graph.model.edge.Transit;
+import org.hisrc.distant.graph.model.edge.Transition;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -10,10 +10,10 @@ public class RideEdgeTest {
 	@Test
 	public void returnsCorrectTransits() {
 		final RideEdge edge = new RideEdge();
-		edge.addTransit(new Transit(100, 200));
-		edge.addTransit(new Transit(200, 300));
-		edge.addTransit(new Transit(90, 210));
-		edge.addTransit(new Transit(110, 190));
+		edge.addTransit(new Transition(100, 200));
+		edge.addTransit(new Transition(200, 300));
+		edge.addTransit(new Transition(90, 210));
+		edge.addTransit(new Transition(110, 190));
 
 		Assert.assertEquals(190, edge.after(0).getArrivalTime());
 		Assert.assertEquals(190, edge.after(80).getArrivalTime());
