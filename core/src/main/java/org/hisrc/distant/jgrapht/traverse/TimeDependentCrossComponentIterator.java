@@ -375,6 +375,7 @@ public abstract class TimeDependentCrossComponentIterator<V, E, D, T> extends
 					edge, arrivalTime);
 			if (transitionToOppositeVertex == null)
 			{
+				// There is not transition to the opposite edge after 
 				continue;
 			}
 			if (nListeners != 0) {

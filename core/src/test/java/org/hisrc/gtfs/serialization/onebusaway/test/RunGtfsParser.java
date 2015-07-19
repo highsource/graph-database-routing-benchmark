@@ -50,14 +50,18 @@ public class RunGtfsParser {
 		final String ulmOstpreussenwegStopId = "SWU_9001070";
 		Assert.assertNotNull(service.findVertexById(ulmOstpreussenwegStopId));
 		String wiblingenReutlingerStrasseStopId = "SWU_9001635";
-		Assert.assertNotNull(service.findVertexById(wiblingenReutlingerStrasseStopId));
+		Assert.assertNotNull(service
+				.findVertexById(wiblingenReutlingerStrasseStopId));
 
 		String ulmHauptbahnhofStopId = "SWU_9001008";
 		Assert.assertNotNull(service.findVertexById(ulmHauptbahnhofStopId));
 
+		final long start = System.currentTimeMillis();
 		final TimeDependentGraphPath<StopVertex, TransitionEdge, Transition> findEarliestArrivalPath = service
 				.findEarliestArrivalPath(ulmOstpreussenwegStopId,
 						wiblingenReutlingerStrasseStopId, 12 * 60 * 60);
+		final long end = System.currentTimeMillis();
+		System.out.println(end - start);
 		Assert.assertNotNull(findEarliestArrivalPath);
 
 	}
